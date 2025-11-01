@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SERVICES</title>
+    
+    <!-- Section 4.3: Futuristic Typography (Google Fonts) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Exo+2:wght@300;400;500&display=swap" rel="stylesheet">
+    
+    <!-- 
+      Part IV: The Heads-Up Display 
+      All CSS is contained within this style tag.
+      It has been refactored to be mobile-first and responsive.
+    -->
+    <style>
+        :root {
+            --glow-color: #00ffff; /* Cyan glow */
+            --glow-color-light: rgba(0, 255, 255, 0.5);
+            --glow-color-transparent-border: rgba(0, 255, 255, 0.2);
+            --bg-glass-panel: rgba(0, 5, 20, 0.4); /* Darker, more transparent base for glass */
+            --text-color-primary: #e0e0e0;
+            --text-color-secondary: #999999;
+            --font-orbitron: 'Orbitron', sans-serif;
+            --font-exo2: 'Exo 2', sans-serif;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            /* Use height: 100dvh to account for mobile browser UI */
+            height: 100dvh; 
+            overflow: hidden;
+            font-family: var(--font-exo2); /* Default font for body text */
+            background: #000;
+            color: var(--text-color-primary);
+        }
+
+        #container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Allows mouse events to pass through to the canvas */
+            display: flex;
+            flex-direction: column;
+            /* Mobile-first padding */
+            padding: 1.5rem; 
+            box-sizing: border-box;
+        }
+
+        /* Header UI Element - Mobile-first (stacked, centered) */
+        header {
+            display: flex;
+            flex-direction: column; /* Mobile: stack title and nav */
+            align-items: center;  /* Mobile: center-align */
+            width: 100%;
+            margin-bottom: 1rem; /* Less margin on mobile */
+            pointer-events: auto;
+            text-align: center;
+            z-index: 20; /* Ensure header is above panels */
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Mobile: center-align */
+        }
+
+        header h1 {
+            font-family: var(--font-orbitron);
+            /* Slightly smaller font for mobile */
+            font-size: 2.2rem; 
+            margin: 0;
+            font-weight: 700;
+            color: var(--text-color-primary);
+            text-shadow: 0 0 8px var(--glow-color-light), 
+                         0 0 15px rgba(0, 255, 255, 0.1);
+        }
+
+        header p {
+            font-family: var(--font-exo2);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            color: var(--text-color-secondary);
+            letter-spacing: 0.05em;
+        }
+
+        header nav {
+            display: flex;
+            flex-wrap: wrap; /* Allow nav items to wrap on small screens */
+            justify-content: center; /* Center wrapped items */
+            align-items: center;
+            margin-top: 1rem; /* Space between title block and nav */
+        }
+
+        header nav a {
+            font-family: var(--font-exo2);
+            color: var(--text-color-primary);
+            text-decoration: none;
+            /* Spacing for wrapped items */
+            margin: 0.5rem 1rem; 
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: relative;
+            transition: color 0.3s ease;
+        }
+
+        header nav a::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -5px;
+            width: 0;
+            height: 1px;
+            background: var(--glow-color);
+            transition: width 0.3s ease;
+        }
+
+        header nav a:hover {
+            color: var(--glow-color);
+        }
+
+        header nav a:hover::after {
+            width: 100%;
+        }
+
+        .search-icon {
+            /* Spacing for wrapped items */
+            margin: 0.5rem 1rem; 
+            font-size: 1.2rem;
+            color: var(--text-color-primary);
+            cursor: pointer;
+            transition: color 0.3s ease;
+            display: inline-flex; /* Align icon properly */
+            align-items: center;
+        }
+
+        .search-icon:hover {
+            color: var(--glow-color);
+        }
+
+        .search-icon svg {
+            display: block;
+            width: 1em; /* Use font-size to control size */
+            height: 1em;
+            stroke: currentColor; /* Inherit color */
+        }
+
+        /* Main content area */
+        main {
+            flex-grow: 1; /* Take up remaining vertical space */
+            display: flex;
+            align-items: center; 
+            justify-content: center;
+            position: relative; /* For absolute positioning of panels */
+        }
+
+        /* Service Panels - positioned absolutely relative to main */
+        .panel-wrapper {
+            position: absolute; /* Panels positioned relative to main */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: auto;
+        }
+        
+        .panel {
+            background: var(--bg-glass-panel);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glow-color-transparent-border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.15), 
+                        0 0 30px rgba(0, 255, 255, 0.05);
+            color: var(--text-color-primary);
+            
+            position: absolute;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.6s ease, transform 0.6s ease, visibility 0.6s;
+
+            /* Mobile-first default positioning: centered, bottom-half */
+            width: 90%;
+            max-width: 380px; /* Max width for mobile */
+            top: 65%; /* Position panels towards the bottom */
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+        }
+
+        .panel.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+
+        .panel h2 {
+            font-family: var(--font-orbitron);
+            color: var(--glow-color);
+            text-shadow: 0 0 5px var(--glow-color);
+            margin-top: 0;
+            margin-bottom: 0.8rem;
+            font-size: 1.2rem;
+            letter-spacing: 0.05em;
+        }
+
+        .panel p {
+            font-family: var(--font-exo2);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: var(--text-color-secondary);
+            margin-bottom: 0;
+        }
+
+        /* Pagination Controls - at the bottom center */
+        #pagination {
+            position: absolute;
+            bottom: 2rem; /* Positioned relative to main */
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 0.8rem;
+            pointer-events: auto;
+            padding-bottom: 1rem; /* Space from actual page bottom */
+            z-index: 20; /* Ensure pagination is above panels */
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(0, 255, 255, 0.1);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .dot.active {
+            background: var(--glow-color);
+            box-shadow: 0 0 8px var(--glow-color), 
+                        0 0 12px var(--glow-color);
+        }
+
+        /* --- Desktop Responsive Styles --- */
+        @media (min-width: 1024px) {
+            #ui-overlay {
+                padding: 2rem 4rem;
+            }
+
+            header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: flex-start;
+                text-align: left;
+                margin-bottom: 3rem;
+            }
+
+            .header-left {
+                align-items: flex-start;
+            }
+
+            header h1 {
+                font-size: 2.8rem;
+            }
+
+            header nav {
+                flex-wrap: nowrap;
+                margin-top: 0.5rem;
+            }
+
+            header nav a {
+                margin: 0 0 0 2rem; /* Restore original desktop spacing */
+            }
+
+            .search-icon {
+                margin: 0 0 0 2.5rem; /* Restore original desktop spacing */
+            }
+
+            /* Base panel styles for desktop (resetting mobile) */
+            .panel {
+                width: auto; /* Let content define width */
+                min-width: 280px;
+                max-width: 350px;
+                /* Unset mobile positioning */
+                top: auto;
+                left: auto;
+                transform: scale(0.9); /* Reset transform */
+            }
+
+            .panel.active {
+                transform: scale(1); /* Reset transform */
+            }
+            
+            /* Specific positioning for each panel on desktop */
+            .panel[data-index="0"] { top: 10%; left: 10%; }
+            .panel[data-index="1"] { top: 10%; right: 10%; }
+            .panel[data-index="2"] { bottom: 10%; left: 10%; }
+            .panel[data-index="3"] { bottom: 10%; right: 10%; }
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- This div is the mount point for the Three.js canvas -->
+    <div id="container"></div>
+
+    <!-- This div contains all UI elements, overlaid on top of the canvas -->
+    <div id="ui-overlay">
+        <header>
+            <div class="header-left">
+                <h1>SERVICES</h1>
+                <p>UNEERTHING THE UNSEN: OUR OFFERINGS</p>
+            </div>
+            <nav>
+                <a href="#">HOM CS</a>
+                <a href="#">EEVICKT</a>
+                <a href="#">DUCNCUTS</a>
+                <!-- Replaced unicode with a scalable SVG icon -->
+                <span class="search-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </span>
+            </nav>
+        </header>
+
+        <main>
+            <!-- Service Panels - positioned absolutely within main -->
+            <div class="panel-wrapper">
+                <div class="panel active" data-index="0">
+                    <h2>FORBIDDEN INCULPTS</h2>
+                    <p>Harnessing the power of superposition and entanglement to solve problems beyond the reach of classical machines.</p>
+                </div>
+                <div class="panel" data-index="1">
+                    <h2>QUANTUM ARCHITECTURES</h2>
+                    <p>Advanced AI-driven interfaces that bridge the gap between human consciousness and digital networks.</p>
+                </div>
+                <div class="panel" data-index="2">
+                    <h2>CYBERNETIC CHIMERAS</h2>
+                    <p>Seamlessly integrate technology with biology for enhanced physical and cognitive capabilities.</p>
+                </div>
+                <div class="panel" data-index="3">
+                    <h2>VOID FORGE PROTOCOL</h2>
+                    <p>Next-generation security protocols built on uncrackable quantum-resistant encryption algorithms.</p>
+                </div>
+            </div>
+
+            <!-- Pagination Dots -->
+            <nav id="pagination">
+                <div class="dot active" data-index="0"></div>
+                <div class="dot" data-index="1"></div>
+                <div class="dot" data-index="2"></div>
+                <div class="dot" data-index="3"></div>
+            </nav>
+        </main>
+
+    </div>
+
+    <!-- Importmap for Three.js modules -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js"
+        }
+      }
+    </script>
+
+    <!-- Main application logic -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/loaders/GLTFLoader.js';
+        
+        // This is a placeholder for the actual cube model and textures.
+        const CUBE_MODEL_URL = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb'; // Using a placeholder GLB
+        
+        class World {
+            constructor() {
+                this.container = document.getElementById('container');
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(
+                    75, 
+                    window.innerWidth / window.innerHeight, 
+                    0.1, 
+                    1000
+                );
+                this.camera.position.z = 5;
+
+                this.renderer = new THREE.WebGLRenderer({
+                    antialias: true,
+                    alpha: true 
+                });
+                this.clock = new THREE.Clock();
+                this.targetRotation = new THREE.Vector3(0, 0, 0); // Using Vector3 for x,y,z rotation
+                this.isHovering = false;
+                
+                this.raycaster = new THREE.Raycaster();
+                this.mouse = new THREE.Vector2();
+
+                this.panels = document.querySelectorAll('.panel');
+                this.dots = document.querySelectorAll('.dot');
+                
+                this.cube = null; // Will hold the loaded 3D cube
+                
+                this.init();
+            }
+
+            init() {
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Performance optimization
+                this.container.appendChild(this.renderer.domElement);
+
+                this.addLights();
+                this.addBackground();
+                this.loadCube(); // Load the 3D model
+
+                this.addEventListeners();
+                this.initUI();
+                
+                // Use the recommended setAnimationLoop for VR/AR compatibility
+                this.renderer.setAnimationLoop(this.animate.bind(this));
+            }
+
+            addLights() {
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+                this.scene.add(ambientLight);
+
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+                directionalLight.position.set(5, 5, 5);
+                this.scene.add(directionalLight);
+            }
+
+            addBackground() {
+                // Using a CubeTextureLoader for a more immersive nebula background
+                const cubeTextureLoader = new THREE.CubeTextureLoader();
+                const backgroundTexture = cubeTextureLoader.load([
+                    'https://cdn.jsdelivr.net/gh/mrdoob/three.js@dev/examples/textures/cube/Bridge2/px.jpg', // right
+                    'https://cdn.jsdelivr.net/gh/mrdoob/three.js@dev/examples/textures/cube/Bridge2/nx.jpg', // left
+                    'https://cdn.jsdelivr.net/gh/mrdoob/three.js@dev/examples/textures/cube/Bridge2/py.jpg', // top
+                    'https://cdn.jsdelivr.net/gh/mrdoob/three.js@dev/examples/textures/cube/Bridge2/ny.jpg', // bottom
+                    'https://cdn.jsdelivr.net/gh/mrdoob/three.js@dev/examples/textures/cube/Bridge2/pz.jpg', // back
+                    'https://cdn.jsdelivr.net/gh/mrdoob/three.js@dev/examples/textures/cube/Bridge2/nz.jpg'  // front
+                ]);
+                this.scene.background = backgroundTexture;
+                this.scene.environment = backgroundTexture; // For reflections
+            }
+
+            /**
+             * Loads a .glb model (placeholder for the puzzle cube).
+             */
+            loadCube() {
+                const loader = new GLTFLoader();
+                loader.load(CUBE_MODEL_URL, (gltf) => {
+                    this.cube = gltf.scene;
+                    
+                    this.cube.scale.set(1.5, 1.5, 1.5);
+                    this.cube.position.set(0, 0, 0); 
+
+                    // Apply emissive properties to all meshes in the loaded model
+                    this.cube.traverse((child) => {
+                        if (child.isMesh) {
+                            // Check if material is an array (MultiMaterial)
+                            if (Array.isArray(child.material)) {
+                                child.material.forEach(this.applyGlowMaterial);
+                            } else {
+                                this.applyGlowMaterial(child.material);
+                            }
+                        }
+                    });
+
+                    this.scene.add(this.cube);
+                }, undefined, (error) => {
+                    console.error('An error occurred loading the GLTF model:', error);
+                    // Fallback to a simple Three.js cube if GLB loading fails
+                    this.addFallbackCube();
+                });
+            }
+
+            // Helper function to apply material properties
+            applyGlowMaterial(material) {
+                // You can customize this. For the DamagedHelmet, we might not want to
+                // override all materials, but for a placeholder it's fine.
+                // This example just makes it metallic and rough.
+                if (material.isMeshStandardMaterial) {
+                    material.metalness = 0.9;
+                    material.roughness = 0.3;
+                    // You could add an emissive map or color here
+                    // material.emissive = new THREE.Color(0x00ffff);
+                    // material.emissiveIntensity = 0.1;
+                }
+            }
+
+
+            // Fallback cube in case GLTF doesn't load
+            addFallbackCube() {
+                console.log("Loading fallback cube.");
+                const geometry = new THREE.BoxGeometry(2, 2, 2);
+                const emissiveMap = this.createEmissiveMap();
+                const material = new THREE.MeshStandardMaterial({
+                    color: 0x202020,
+                    metalness: 0.9,
+                    roughness: 0.3,
+                    emissive: 0x00ffff,
+                    emissiveMap: emissiveMap,
+                    emissiveIntensity: 1.5,
+                });
+                this.cube = new THREE.Mesh(geometry, material);
+                this.scene.add(this.cube);
+            }
+
+            // Helper to create a basic emissive map
+            createEmissiveMap() {
+                const canvas = document.createElement('canvas');
+                const size = 256;
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, size, size);
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 8;
+                // Simple line pattern
+                ctx.beginPath();
+                ctx.moveTo(0, size * 0.2); ctx.lineTo(size, size * 0.3); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(size * 0.2, 0); ctx.lineTo(size * 0.3, size); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(size, size * 0.8); ctx.lineTo(0, size * 0.7); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(size * 0.8, size); ctx.lineTo(size * 0.7, 0); ctx.stroke();
+                return new THREE.CanvasTexture(canvas);
+            }
+
+            addEventListeners() {
+                window.addEventListener('resize', this.onResize.bind(this));
+                window.addEventListener('mousemove', this.onMouseMove.bind(this));
+                this.dots.forEach(dot => {
+                    dot.addEventListener('click', this.onDotClick.bind(this));
+                });
+            }
+
+            initUI() {
+                this.updateActivePanel(0);
+            }
+            
+            onDotClick(event) {
+                const index = parseInt(event.target.dataset.index);
+                this.updateActivePanel(index);
+            }
+            
+            updateActivePanel(index) {
+                this.panels.forEach((panel, i) => {
+                    panel.classList.toggle('active', i === index);
+                });
+                this.dots.forEach((dot, i) => {
+                    dot.classList.toggle('active', i === index);
+                });
+
+                // Update target rotation for the cube
+                this.targetRotation.y = index * (Math.PI / 2); 
+            }
+
+            onResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Update pixel ratio on resize
+            }
+
+            onMouseMove(event) {
+                this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            }
+
+            checkRaycast() {
+                if (!this.cube) return; // Ensure cube is loaded
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObject(this.cube, true); // True to check all descendants
+                this.isHovering = intersects.length > 0;
+            }
+
+            animate() {
+                const delta = this.clock.getDelta();
+
+                // Raycast every frame to check hover state
+                this.checkRaycast();
+
+                if (this.cube) {
+                    if (!this.isHovering) {
+                        // Slowly rotate if not hovering
+                        this.cube.rotation.y += 0.1 * delta; // Slower rotation
+                    }
+                    
+                    // Smoothly tween to the target rotation set by the UI
+                    this.cube.rotation.y = THREE.MathUtils.lerp(this.cube.rotation.y, this.targetRotation.y, 0.05);
+                    
+                    // Add subtle mouse-follow rotation for effect
+                    this.cube.rotation.x = THREE.MathUtils.lerp(this.cube.rotation.x, this.mouse.y * 0.1, 0.05);
+                    this.cube.rotation.z = THREE.MathUtils.lerp(this.cube.rotation.z, -this.mouse.x * 0.1, 0.05);
+                }
+
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        // Wait for the DOM to be fully loaded before initializing
+        window.addEventListener('DOMContentLoaded', () => {
+            new World();
+        });
+
+    </script>
+</body>
+</html>
